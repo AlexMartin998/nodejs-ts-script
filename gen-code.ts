@@ -67,6 +67,19 @@ export class Upd${modelName}Dto {
 }`;
 };
 
+export const getResponseDtoCode = ({ modelName }: { modelName: string }) => {
+  return `export class ${modelName + 'Dto'} {
+  private constructor(
+    public readonly id: string,
+  ) {}
+
+  static create(props: Record<string, any>): ${modelName + 'Dto'} {
+    const { _id } = props;
+    return new ${modelName + 'Dto'}(_id);
+  }
+}`;
+};
+
 export const genIndexDtoCode = ({
   modelName,
   indexDtoUrl,
@@ -74,8 +87,9 @@ export const genIndexDtoCode = ({
   modelName: string;
   indexDtoUrl: string;
 }) => {
-  const indexDtoContent = `export * from './create-${modelName.toLowerCase()}.dto';
-  export * from './update-${modelName.toLowerCase()}.dto';`;
+  const indexDtoContent = `export * from './${modelName.toLowerCase()}.dto';
+export * from './create-${modelName.toLowerCase()}.dto';
+export * from './update-${modelName.toLowerCase()}.dto';`;
 
   // write file if not exists, otherwise add new imports at the end
   if (!fs.existsSync(indexDtoUrl)) {
@@ -110,16 +124,21 @@ export const genServiceInterfaceCode = ({
   modelName: string;
   appName: string;
 }) => {
-  return `import { Create${modelName}Dto, Upd${modelName}Dto } from '@/${appName}/dtos';
+  const resPonseNameDto = modelName + 'Dto';
+
+  return `import { Create${modelName}Dto, Upd${modelName}Dto, ${resPonseNameDto} } from '@/${appName}/dtos';
+import { PaginationDto, PaginationResponseDto } from '@/shared/dtos';
 
 export interface ${modelName}Service {
-  create(createDto: Create${modelName}Dto): Promise<void>;
+  create(createDto: Create${modelName}Dto): Promise<${resPonseNameDto}>;
+  
+  findAll(
+    paginationDto: PaginationDto
+  ): Promise<PaginationResponseDto<${resPonseNameDto}>>;
 
-  update(id: string, updDto: Upd${modelName}Dto): Promise<void>;
+  findOne(id: string): Promise<${resPonseNameDto}>;
 
-  findAll(): Promise<void>;
-
-  findOne(id: string): Promise<void>;
+  update(id: string, updDto: Upd${modelName}Dto): Promise<${resPonseNameDto}>;
 
   delete(id: string): Promise<void>;
 }
@@ -133,32 +152,66 @@ export const genServiceImplCode = ({
   modelName: string;
   appName: string;
 }) => {
-  return `import { Create${modelName}Dto, Upd${modelName}Dto } from '@/${appName}/dtos';
+  const resPonseNameDto = modelName + 'Dto';
+
+  return `import { Create${modelName}Dto, Upd${modelName}Dto, ${resPonseNameDto} } from '@/${appName}/dtos';
 import { ${modelName}Service } from './${modelName.toLowerCase()}.service';
 import { ${modelName}Model } from '../models';
+import { PaginationDto, PaginationResponseDto } from '@/shared/dtos';
+import { ResourceNotFoundError } from '@/shared/domain';
+
 
 export class ${modelName}ServiceImpl implements ${modelName}Service {
 
   constructor(private readonly ${modelName.toLowerCase()}Model: typeof ${modelName}Model) {}
 
-  async create(createDto: Create${modelName}Dto): Promise<void> {
-    throw new Error('Method not implemented.');
+  async create(createDto: Create${modelName}Dto): Promise<${resPonseNameDto}> {
+    const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Model.create(createDto);
+
+    return ${resPonseNameDto}.create(${modelName.toLocaleLowerCase()}!);
   }
 
-  async update(id: string, updDto: Upd${modelName}Dto): Promise<void> {
-    throw new Error('Method not implemented.');
+  async findAll(
+    paginationDto: PaginationDto
+  ): Promise<PaginationResponseDto<${resPonseNameDto}>> {
+    const { page, limit } = paginationDto;
+    const [total, ${modelName.toLocaleLowerCase()}s] = await Promise.all([
+      this.${modelName.toLowerCase()}Model.countDocuments(),
+      this.${modelName.toLowerCase()}Model
+        .find()
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    return PaginationResponseDto.create<${resPonseNameDto}>(
+      page,
+      limit,
+      total,
+      ${modelName.toLocaleLowerCase()}s.map(${resPonseNameDto}.create)
+    );
   }
 
-  async findAll(): Promise<void> {
-    throw new Error('Method not implemented.');
+  async findOne(id: string): Promise<${resPonseNameDto}> {
+    const ${modelName.toLocaleLowerCase()} = await this.findOneById(id);
+    if (!${modelName.toLocaleLowerCase()}) throw new ResourceNotFoundError('${modelName} not found');
+    return ${resPonseNameDto}.create(${modelName.toLocaleLowerCase()});
   }
 
-  async findOne(id: string): Promise<void> {
-    throw new Error('Method not implemented.');
+  async update(id: string, updDto: Upd${modelName}Dto): Promise<${resPonseNameDto}> {
+    const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Model.findByIdAndUpdate(id, updDto, { new: true });
+    if (!${modelName.toLocaleLowerCase()}) throw new ResourceNotFoundError('${modelName} not found');
+
+    return ${resPonseNameDto}.create(${modelName.toLocaleLowerCase()});
   }
 
   async delete(id: string): Promise<void> {
-    throw new Error('Method not implemented.');
+    const res = await this.${modelName.toLowerCase()}Model.findByIdAndDelete(id);
+    if (!res) throw new ResourceNotFoundError('${modelName} not found');
+  }
+
+  private async findOneById(id: string): Promise<any> {
+    return this.${modelName.toLowerCase()}Model.findById(id) || null;
   }
 }
 `;
@@ -209,6 +262,7 @@ export const genControllerCode = ({
 }) => {
   return `import { Request, Response } from 'express';
 
+import { PaginationDto } from '@/shared/dtos';
 import { handleRestExceptions } from '@/shared/infrastructure/server/utils';
 import { Create${modelName}Dto, Upd${modelName}Dto } from '../dtos';
 import { ${modelName}Service } from '../services';
@@ -228,7 +282,10 @@ export class ${modelName}Controller {
 
   async findAll(req: Request, res: Response) {
     try {
-        const ${modelName.toLocaleLowerCase()}s = await this.${modelName.toLowerCase()}Service.findAll();
+        const { page = 1, limit = 10 } = req.query;
+        const paginationDto = PaginationDto.create(+page, +limit);
+        const ${modelName.toLocaleLowerCase()}s = await this.${modelName.toLowerCase()}Service.findAll(paginationDto!);
+
         return res.status(200).json(${modelName.toLocaleLowerCase()}s);
     }
     catch (error) {
@@ -309,7 +366,7 @@ export class ${modelName}Routes {
     router.post('/', (req, res) => ${modelName.toLocaleLowerCase()}Controller.create(req, res));
     router.get('/', (req, res) => ${modelName.toLocaleLowerCase()}Controller.findAll(req, res));
     router.get('/:id', (req, res) => ${modelName.toLocaleLowerCase()}Controller.findOne(req, res));
-    router.put('/:id', (req, res) => ${modelName.toLocaleLowerCase()}Controller.update(req, res));
+    router.patch('/:id', (req, res) => ${modelName.toLocaleLowerCase()}Controller.update(req, res));
     router.delete('/:id', (req, res) => ${modelName.toLocaleLowerCase()}Controller.delete(req, res));
 
     return router;

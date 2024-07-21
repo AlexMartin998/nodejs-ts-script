@@ -16,6 +16,7 @@ import {
   genServiceImplCode,
   genServiceInterfaceCode,
   genUpdDtoCode,
+  getResponseDtoCode,
   handleDIContainerCode,
 } from './gen-code';
 
@@ -138,6 +139,15 @@ class MainCommand {
     // write file if not exists, otherwise do nothing
     if (!fs.existsSync(updateDtoUrl)) {
       fs.writeFileSync(updateDtoUrl, updateDtoContent);
+    }
+
+    ///* response dto -------------------
+    const responseDtoUrl = `${dtosPath}/${modelName.toLowerCase()}.dto.ts`;
+    const responseDtoContent = getResponseDtoCode({ modelName });
+
+    // write file if not exists, otherwise do nothing
+    if (!fs.existsSync(responseDtoUrl)) {
+      fs.writeFileSync(responseDtoUrl, responseDtoContent);
     }
 
     ///* index dto -------------------

@@ -8,6 +8,12 @@ bun ./__ts__/main.ts --create_app --app_name="candies" --model_name="Candy"
 bun ./__ts__/main.ts --app_name="candies" --model_name="Juice"
 ```
 
+Files to be completed:
+
+```sh
+Model | Dtos | Main Router
+```
+
 ## Prerequisites
 
 - Node.js installed on your system.

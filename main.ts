@@ -35,7 +35,8 @@ const appUrl = `./src/${appName}`;
 class MainCommand {
   start() {
     if (isNewApp) {
-      this.createApp();
+      const res = this.createApp();
+      if (res === null) return;
     }
 
     this.createModel();
@@ -56,6 +57,12 @@ class MainCommand {
     const appPath = path.join(__dirname, appUrl);
 
     // create app directory
+    const appAlreadyExists = fs.existsSync(appPath);
+    if (appAlreadyExists) {
+      console.log(`App ${appName} already exists at ${appPath}`);
+      return null;
+    }
+
     if (!fs.existsSync(appPath)) {
       fs.mkdirSync(appPath, { recursive: true });
     }

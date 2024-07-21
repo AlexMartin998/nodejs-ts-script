@@ -168,7 +168,7 @@ export * from './update-${modelName.toLowerCase()}.dto';`;
     const serviceUrl = `${appUrl}/services/${modelName.toLowerCase()}.service.ts`;
     const serviceContent = `import { Create${modelName}Dto, Upd${modelName}Dto } from '@/${appName}/dtos';
 
-  exort interface ${modelName}Service {
+  export interface ${modelName}Service {
       create(createDto: Create${modelName}Dto): Promise<void>;
 
       update(id: string, updDto: Upd${modelName}Dto): Promise<void>;
@@ -221,6 +221,16 @@ export * from './update-${modelName.toLowerCase()}.dto';`;
     if (!fs.existsSync(serviceImplUrl)) {
       fs.writeFileSync(serviceImplUrl, serviceImplContent);
     }
+
+    // index file
+    const indexServiceUrl = `${appUrl}/services/index.ts`;
+    const indexServiceContent = `export * from './${modelName.toLowerCase()}.service';
+export * from './${modelName.toLowerCase()}.service.impl';`;
+    // write file if not exists, otherwise do nothing
+    if (!fs.existsSync(indexServiceUrl)) {
+      fs.writeFileSync(indexServiceUrl, indexServiceContent);
+    }
+
     console.log(
       `******* Service Implementation created at ${serviceImplUrl} *******`
     );
@@ -230,63 +240,64 @@ export * from './update-${modelName.toLowerCase()}.dto';`;
     const controllerUrl = `${appUrl}/controllers/${modelName.toLowerCase()}.controller.ts`;
     const controllerContent = `import { Request, Response } from 'express';
 
-    import { handleRestExceptions } from '@/shared/insfrastructure/server/utils';
-    import { Create${modelName}Dto, Upd${modelName}Dto } from '../dtos';
-    import { ${modelName}Service } from '../services';
+import { handleRestExceptions } from '@/shared/insfrastructure/server/utils';
+import { Create${modelName}Dto, Upd${modelName}Dto } from '../dtos';
+import { ${modelName}Service } from '../services';
 
-    export class ${modelName}Controller {
-        constructor(private readonly ${modelName.toLowerCase()}Service: ${modelName}Service) {}
+export class ${modelName}Controller {
+  constructor(private readonly ${modelName.toLowerCase()}Service: ${modelName}Service) {}
 
-        async create(req: Request, res: Response) {
-            try {
-                const createDto = Create${modelName}Dto.create(req.body);
-                const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Service.create(createDto!);
-                return res.status(201).json(${modelName.toLocaleLowerCase()});
-            } catch (error) {
-                handleRestExceptions(error, res);
-            }
-        }
+  async create(req: Request, res: Response) {
+    try {
+        const createDto = Create${modelName}Dto.create(req.body);
+        const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Service.create(createDto!);
+        return res.status(201).json(${modelName.toLocaleLowerCase()});
+    } catch (error) {
+        handleRestExceptions(error, res);
+    }
+  }
 
-        async findAll(req: Request, res: Response) {
-            try {
-                const ${modelName.toLocaleLowerCase()}s = await this.${modelName.toLowerCase()}Service.findAll();
-                return res.status(200).json(${modelName.toLocaleLowerCase()}s);
-            }
-            catch (error) {
-                handleRestExceptions(error, res);
-            }
-        }
+  async findAll(req: Request, res: Response) {
+    try {
+        const ${modelName.toLocaleLowerCase()}s = await this.${modelName.toLowerCase()}Service.findAll();
+        return res.status(200).json(${modelName.toLocaleLowerCase()}s);
+    }
+    catch (error) {
+        handleRestExceptions(error, res);
+    }
+  }
 
-        async findOne(req: Request, res: Response) {
-            try {
-                const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Service.findOne(req.params.id);
-                return res.status(200).json(${modelName.toLocaleLowerCase()});
-            }
-            catch (error) {
-                handleRestExceptions(error, res);
-            }
-        }
+  async findOne(req: Request, res: Response) {
+    try {
+        const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Service.findOne(req.params.id);
+        return res.status(200).json(${modelName.toLocaleLowerCase()});
+    }
+    catch (error) {
+        handleRestExceptions(error, res);
+    }
+  }
 
-        async update(req: Request, res: Response) {
-            try {
-                const updDto = Upd${modelName}Dto.create(req.body);
-                const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Service.update(req.params.id, updDto!);
-                return res.status(200).json(${modelName.toLocaleLowerCase()});
-            }
-            catch (error) {
-                handleRestExceptions(error, res);
-            }
-        }
+  async update(req: Request, res: Response) {
+    try {
+        const updDto = Upd${modelName}Dto.create(req.body);
+        const ${modelName.toLocaleLowerCase()} = await this.${modelName.toLowerCase()}Service.update(req.params.id, updDto!);
+        return res.status(200).json(${modelName.toLocaleLowerCase()});
+    }
+    catch (error) {
+        handleRestExceptions(error, res);
+    }
+  }
 
-        async delete(req: Request, res: Response) {
-            try {
-                await this.${modelName.toLowerCase()}Service.delete(req.params.id);
-                return res.status(204).send();
-            }
-            catch (error) {
-                handleRestExceptions(error, res);
-            }
-        }
+  async delete(req: Request, res: Response) {
+    try {
+        await this.${modelName.toLowerCase()}Service.delete(req.params.id);
+        return res.status(204).send();
+    }
+    catch (error) {
+        handleRestExceptions(error, res);
+    }
+  }
+}
     `;
 
     const directory = path.dirname(controllerUrl);

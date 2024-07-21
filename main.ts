@@ -30,6 +30,10 @@ class MainCommand {
     this.createService();
     this.createController();
     this.createRoutes();
+
+    // upd common files --------
+    this.updateDIContainer();
+    // this.updateServerRoutes();
   }
 
   createApp() {
@@ -112,7 +116,7 @@ export const ${modelName}Model = mongoose.model('${modelName}', ${modelName.toLo
     const createDtoContent = `import { z } from 'zod';
 
 import { InvalidArgumentError, Nullable } from '@/shared/domain';
-import { handleDtoValidation } from '@/shared/insfrastructure/utils';
+import { handleDtoValidation } from '@/shared/infrastructure/utils';
 
 export const Create${modelName}Schema = z.object({});
 
@@ -142,7 +146,7 @@ export class Create${modelName}Dto {
     //* upd dto -------------------
     const updateDtoUrl = `${dtosPath}/update-${modelName.toLowerCase()}.dto.ts`;
     const updateDtoContent = `import { InvalidArgumentError, Nullable } from '@/shared/domain';
-import { handleDtoValidation } from '@/shared/insfrastructure/utils';
+import { handleDtoValidation } from '@/shared/infrastructure/utils';
 import { Create${modelName}Schema } from './create-${modelName.toLowerCase()}.dto';
 
 const Upd${modelName}Schema = Create${modelName}Schema.partial();
@@ -301,7 +305,7 @@ export * from './${modelName.toLowerCase()}.service.impl';`;
     const controllerUrl = `${appUrl}/controllers/${modelName.toLowerCase()}.controller.ts`;
     const controllerContent = `import { Request, Response } from 'express';
 
-import { handleRestExceptions } from '@/shared/insfrastructure/server/utils';
+import { handleRestExceptions } from '@/shared/infrastructure/server/utils';
 import { Create${modelName}Dto, Upd${modelName}Dto } from '../dtos';
 import { ${modelName}Service } from '../services';
 
@@ -396,7 +400,7 @@ export class ${modelName}Controller {
     const routesUrl = `${appUrl}/routes/${modelName.toLowerCase()}.routes.ts`;
     const routesContent = `import { Router } from 'express';
 
-import { diContainer } from '@/shared/insfrastructure/config';
+import { diContainer } from '@/shared/infrastructure/config';
 import { ${modelName}Controller } from '../controllers';
 
 export class ${modelName}Routes {
@@ -444,6 +448,61 @@ export class ${modelName}Routes {
     }
 
     console.log(`******* Routes created at ${routesUrl}.ts *******`);
+  }
+
+  ///* upd common files -------------------
+  updateDIContainer() {
+    const diContainerUrl = `./src/shared/infrastructure/config/di-container.ts`;
+    // const modelsText = '// models';
+    const modelsEndText = '// models-end';
+    // const servicesText = '// services';
+    const servicesEndText = '// services-end';
+    // const controllersText = '// controllers';
+    const controllersEndText = '// controllers-end';
+    const importsEndText = '// imports-end';
+
+    // Read file
+    const data = fs.readFileSync(diContainerUrl, 'utf-8');
+    const lines = data.split('\n');
+
+    // Add import
+    let importLine = `import { ${modelName}Model } from '@/${appName}/models';`;
+    const importEndIndex = lines.findIndex(line =>
+      line.includes(importsEndText)
+    );
+    lines.splice(importEndIndex, 0, importLine);
+    importLine = `import { ${modelName}ServiceImpl } from '@/${appName}/services';`;
+    lines.splice(importEndIndex, 0, importLine);
+    importLine = `import { ${modelName}Controller } from '@/${appName}/controllers';`;
+    lines.splice(importEndIndex, 0, importLine);
+
+    // Add model
+    const modelLine = `    ${modelName.toLowerCase()}Model: asValue(${modelName}Model),`;
+    const modelEndIndex = lines.findIndex(line => line.includes(modelsEndText));
+    lines.splice(modelEndIndex, 0, modelLine);
+
+    // Add service
+    const serviceLine = `    ${modelName.toLowerCase()}Service: asClass(${modelName.concat(
+      'ServiceImpl'
+    )}),`;
+    const serviceEndIndex = lines.findIndex(line =>
+      line.includes(servicesEndText)
+    );
+    lines.splice(serviceEndIndex, 0, serviceLine);
+
+    // Add controller
+    const controllerLine = `    ${modelName.toLowerCase()}Controller: asClass(${modelName.concat(
+      'Controller'
+    )}),`;
+    const controllerEndIndex = lines.findIndex(line =>
+      line.includes(controllersEndText)
+    );
+    lines.splice(controllerEndIndex, 0, controllerLine);
+
+    // Write file
+    fs.writeFileSync(diContainerUrl, lines.join('\n'));
+
+    console.log(`******* DI Container updated at ${diContainerUrl} *******`);
   }
 
   private capitalize(str: string) {

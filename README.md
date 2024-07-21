@@ -1,6 +1,12 @@
-# Node.js + TS + Awilix Script Documentation
+# Node.js + TS + Awilix Script Documentation | [MongoDB - Mongoose]
 
 This documentation provides an overview of how to use the custom script for creating applications and models in a Node.js + TypeScript project using Awilix for dependency injection.
+
+```sh
+bun ./__ts__/main.ts --create_app --app_name="candies" --model_name="Candy"
+
+bun ./__ts__/main.ts --app_name="candies" --model_name="Juice"
+```
 
 ## Prerequisites
 

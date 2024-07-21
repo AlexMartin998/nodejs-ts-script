@@ -81,12 +81,24 @@ export const ${modelName}Model = mongoose.model('${modelName}', ${modelName.toLo
       fs.writeFileSync(modelUrl, modelContent);
     }
 
-    // create index file
+    // create index file -------------------
     const indexModelUrl = `${appUrl}/models/index.ts`;
     const indexModelContent = `export * from './${modelName.toLocaleLowerCase()}.model';`;
-    // write file if not exists, otherwise do nothing
+    // write file if not exists, otherwise add new imports at the end
     if (!fs.existsSync(indexModelUrl)) {
       fs.writeFileSync(indexModelUrl, indexModelContent);
+    } else {
+      const data = fs.readFileSync(indexModelUrl, 'utf-8');
+      if (
+        !data.includes(
+          `export * from './${modelName.toLocaleLowerCase()}.model';`
+        )
+      ) {
+        fs.appendFileSync(
+          indexModelUrl,
+          `\nexport * from './${modelName.toLocaleLowerCase()}.model';\n`
+        );
+      }
     }
 
     console.log(`******* Model created at ${modelUrl} *******`);
@@ -162,9 +174,31 @@ export class Upd${modelName}Dto {
     const indexDtoContent = `export * from './create-${modelName.toLowerCase()}.dto';
 export * from './update-${modelName.toLowerCase()}.dto';`;
 
-    // write file if not exists, otherwise do nothing
+    // write file if not exists, otherwise add new imports at the end
     if (!fs.existsSync(indexDtoUrl)) {
       fs.writeFileSync(indexDtoUrl, indexDtoContent);
+    } else {
+      const data = fs.readFileSync(indexDtoUrl, 'utf-8');
+      if (
+        !data.includes(
+          `export * from './create-${modelName.toLowerCase()}.dto';`
+        )
+      ) {
+        fs.appendFileSync(
+          indexDtoUrl,
+          `\nexport * from './create-${modelName.toLowerCase()}.dto';\n`
+        );
+      }
+      if (
+        !data.includes(
+          `export * from './update-${modelName.toLowerCase()}.dto';`
+        )
+      ) {
+        fs.appendFileSync(
+          indexDtoUrl,
+          `export * from './update-${modelName.toLowerCase()}.dto';\n`
+        );
+      }
     }
 
     console.log(`******* Dtos created at ${dtosPath} *******`);
@@ -229,13 +263,33 @@ export class ${modelName}ServiceImpl implements ${modelName}Service {
       fs.writeFileSync(serviceImplUrl, serviceImplContent);
     }
 
-    // index file
+    // index file -------------------
     const indexServiceUrl = `${appUrl}/services/index.ts`;
     const indexServiceContent = `export * from './${modelName.toLowerCase()}.service';
 export * from './${modelName.toLowerCase()}.service.impl';`;
-    // write file if not exists, otherwise do nothing
+    // write file if not exists, otherwise add new imports at the end
     if (!fs.existsSync(indexServiceUrl)) {
       fs.writeFileSync(indexServiceUrl, indexServiceContent);
+    } else {
+      const data = fs.readFileSync(indexServiceUrl, 'utf-8');
+      if (
+        !data.includes(`export * from './${modelName.toLowerCase()}.service';`)
+      ) {
+        fs.appendFileSync(
+          indexServiceUrl,
+          `\nexport * from './${modelName.toLowerCase()}.service';\n`
+        );
+      }
+      if (
+        !data.includes(
+          `export * from './${modelName.toLowerCase()}.service.impl';`
+        )
+      ) {
+        fs.appendFileSync(
+          indexServiceUrl,
+          `export * from './${modelName.toLowerCase()}.service.impl';\n`
+        );
+      }
     }
 
     console.log(
@@ -317,12 +371,24 @@ export class ${modelName}Controller {
       fs.writeFileSync(controllerUrl, controllerContent);
     }
 
-    // create index file
+    // create index file -------------------
     const indexControllerUrl = `${appUrl}/controllers/index.ts`;
     const indexControllerContent = `export * from './${modelName.toLowerCase()}.controller';`;
-    // write file if not exists, otherwise do nothing
+    // write file if not exists, otherwise add new imports at the end
     if (!fs.existsSync(indexControllerUrl)) {
       fs.writeFileSync(indexControllerUrl, indexControllerContent);
+    } else {
+      const data = fs.readFileSync(indexControllerUrl, 'utf-8');
+      if (
+        !data.includes(
+          `export * from './${modelName.toLowerCase()}.controller';`
+        )
+      ) {
+        fs.appendFileSync(
+          indexControllerUrl,
+          `\nexport * from './${modelName.toLowerCase()}.controller';\n`
+        );
+      }
     }
   }
 
@@ -355,8 +421,26 @@ export class ${modelName}Routes {
     }
 
     // Ahora, escribe el archivo si no existe
-    if (!fs.existsSync(routesUrl + '.ts')) {
-      fs.writeFileSync(routesUrl + '.ts', routesContent);
+    if (!fs.existsSync(routesUrl)) {
+      fs.writeFileSync(routesUrl, routesContent);
+    }
+
+    // create index file -------------------
+    const indexRoutesUrl = `${appUrl}/routes/index.ts`;
+    const indexRoutesContent = `export * from './${modelName.toLowerCase()}.routes';`;
+    // write file if not exists, otherwise add new imports at the end
+    if (!fs.existsSync(indexRoutesUrl)) {
+      fs.writeFileSync(indexRoutesUrl, indexRoutesContent);
+    } else {
+      const data = fs.readFileSync(indexRoutesUrl, 'utf-8');
+      if (
+        !data.includes(`export * from './${modelName.toLowerCase()}.routes';`)
+      ) {
+        fs.appendFileSync(
+          indexRoutesUrl,
+          `\nexport * from './${modelName.toLowerCase()}.routes';\n`
+        );
+      }
     }
 
     console.log(`******* Routes created at ${routesUrl}.ts *******`);
